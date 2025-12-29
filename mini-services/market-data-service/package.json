@@ -1,0 +1,16 @@
+{
+  "name": "market-data-service",
+  "version": "1.0.0",
+  "description": "Real-time market data streaming service for QuandMarket",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot index.ts"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.3"
+  }
+}

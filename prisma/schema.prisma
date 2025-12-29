@@ -1,0 +1,209 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  portfolios    Portfolio[]
+  alerts        Alert[]
+  strategies    Strategy[]
+}
+
+enum AssetClass {
+  CRYPTO
+  FOREX
+  INDEX
+  MINERAL
+}
+
+enum SignalType {
+  BUY
+  SELL
+  HOLD
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Asset {
+  id          String     @id @default(cuid())
+  symbol      String     @unique
+  name        String
+  class       AssetClass
+  basePrice   Float
+  currentPrice Float
+  priceChange Float
+  priceChangePercent Float
+  volume      Float?
+  marketCap   Float?
+  lastUpdated DateTime  @default(now())
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  pricePoints PricePoint[]
+  signals     Signal[]
+  forecasts   Forecast[]
+  portfolios  PortfolioAsset[]
+  patterns    Pattern[]
+}
+
+model PricePoint {
+  id          String   @id @default(cuid())
+  assetId     String
+  asset       Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  open        Float
+  high        Float
+  low         Float
+  close       Float
+  volume      Float?
+  timestamp   DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([assetId, timestamp])
+}
+
+model Signal {
+  id          String     @id @default(cuid())
+  assetId     String
+  asset       Asset      @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  type        SignalType
+  confidence  Float
+  riskLevel   RiskLevel
+  targetPrice Float?
+  stopLoss    Float?
+  reasoning   String?
+  patterns    String?
+  isAiGenerated Boolean  @default(true)
+  createdAt   DateTime   @default(now())
+
+  @@index([assetId, createdAt])
+}
+
+model Forecast {
+  id              String   @id @default(cuid())
+  assetId         String
+  asset           Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  timeHorizon     String
+  predictedPrice  Float
+  confidence      Float
+  rationale       String
+  keyFactors      String
+  aiGenerated     Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  @@index([assetId, createdAt])
+}
+
+model Pattern {
+  id          String   @id @default(cuid())
+  assetId     String
+  asset       Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  name        String
+  type        String
+  confidence  Float
+  detectedAt  DateTime @default(now())
+  description String?
+  significance String?
+
+  @@index([assetId, detectedAt])
+}
+
+model Portfolio {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  totalValue  Float
+  totalPnl    Float
+  totalPnlPercent Float
+  riskScore   Float?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  assets      PortfolioAsset[]
+
+  @@index([userId])
+}
+
+model PortfolioAsset {
+  id            String      @id @default(cuid())
+  portfolioId   String
+  portfolio     Portfolio   @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  assetId       String
+  asset         Asset       @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  quantity      Float
+  avgCost       Float
+  currentValue  Float
+  pnl           Float
+  pnlPercent    Float
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([portfolioId])
+  @@index([assetId])
+}
+
+model Alert {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assetId       String
+  assetSymbol   String
+  assetName     String
+  condition     String
+  threshold     Float
+  isActive      Boolean  @default(true)
+  isTriggered   Boolean  @default(false)
+  triggeredAt   DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Strategy {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  parameters    String
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Backtest {
+  id              String   @id @default(cuid())
+  name            String
+  strategyId      String
+  assetId         String
+  assetSymbol     String
+  startDate       DateTime
+  endDate         DateTime
+  initialCapital  Float
+  finalCapital    Float
+  totalReturn     Float
+  returnPercent   Float
+  maxDrawdown     Float
+  sharpeRatio     Float?
+  winRate         Float?
+  totalTrades     Int
+  winningTrades   Int?
+  parameters      String
+  createdAt       DateTime @default(now())
+}
